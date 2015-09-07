@@ -1,0 +1,20 @@
+Description: zap the disks in two separate commands to prevent hangs.
+Ubuntu-Bug: https://bugs.launchpad.net/ubuntu/trusty/+source/ceph/+bug/1475247
+Origin: upstream,https://github.com/ceph/ceph/commit/10d85e1126768f6c72f7d2a301ea7ca9ba59f8e0
+
+--- a/src/ceph-disk
++++ b/src/ceph-disk
+@@ -1018,6 +1018,13 @@ def zap(dev):
+             [
+                 'sgdisk',
+                 '--zap-all',
++                '--',
++                dev,
++            ],
++        )
++        command_check_call(
++            [
++                'sgdisk',
+                 '--clear',
+                 '--mbrtogpt',
+                 '--',

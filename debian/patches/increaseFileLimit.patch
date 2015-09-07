@@ -1,0 +1,32 @@
+Description: Increase file limit to prevent hitting the file limit 
+
+Upstream commit text
+"
+commit 5773a374d0089ce824dec0a0c74a76e57806cc43
+Author: Sage Weil <sage@redhat.com>
+Date:   Mon Jul 28 09:27:20 2014 -0700
+
+    upstart/ceph-osd.conf: bump nofile limit up by 10x
+
+    This should ensure that we don't hit this limit on all but the very biggest
+    clusters.  We seen it hit on a ~500 OSD dumpling cluster.
+
+    Backport: firefly, dumpling
+    Signed-off-by: Sage Weil <sage@redhat.com>
+"
+
+Author: Dave Chiluk <chiluk@canonical.com>
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/1420647
+Origin: https://github.com/ceph/ceph/commit/5773a374d0089ce824dec0a0c74a76e57806cc43
+---
+--- ceph-0.80.8.orig/src/upstart/ceph-osd.conf
++++ ceph-0.80.8/src/upstart/ceph-osd.conf
+@@ -6,7 +6,7 @@ stop on runlevel [!2345] or stopping cep
+ respawn
+ respawn limit 5 30
+ 
+-limit nofile 32768 32768
++limit nofile 327680 327680
+ 
+ pre-start script
+     set -e

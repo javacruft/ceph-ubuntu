@@ -1,0 +1,55 @@
+From 1cca0c1e91a1e18f82f4d22855e96b2fc947f5ea Mon Sep 17 00:00:00 2001
+From: Dmitry Yatsushkevich <dyatsushkevich@mirantis.com>
+Date: Tue, 17 Mar 2015 15:44:52 -0700
+Subject: [PATCH] rgw: init script waits until the radosgw stops
+
+Fixes: #11140
+Init script waits in stop action until the radowgw daemons stop.
+
+Signed-off-by: Dmitry Yatsushkevich <dyatsushkevich@mirantis.com>
+---
+ src/init-radosgw      | 10 +++++++++-
+ src/init-radosgw.sysv | 11 +++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+--- a/src/init-radosgw
++++ b/src/init-radosgw
+@@ -85,7 +85,15 @@ case "$1" in
+         $0 start
+         ;;
+     stop)
+-        start-stop-daemon --stop -x $RADOSGW --oknodo
++        timeout=0
++        for name in `ceph-conf --list-sections $PREFIX`;
++        do
++          t=`$RADOSGW -n $name --show-config-value rgw_exit_timeout_secs`
++          if [ $t -gt $timeout ]; then timeout=$t; fi
++        done
++
++        if [ $timeout -gt 0 ]; then TIMEOUT="-R $timeout"; fi
++        start-stop-daemon --stop -x $RADOSGW --oknodo $TIMEOUT
+         ;;
+     status)
+         daemon_is_running $RADOSGW
+--- a/src/init-radosgw.sysv
++++ b/src/init-radosgw.sysv
+@@ -99,8 +99,19 @@ case "$1" in
+         ;;
+     stop)
+         #start-stop-daemon --stop -x $RADOSGW --oknodo
++        timeout=0
++        for name in `ceph-conf --list-sections $PREFIX`;
++        do
++          t=`$RADOSGW -n $name --show-config-value rgw_exit_timeout_secs`
++          if [ $t -gt $timeout ]; then timeout=$t; fi
++        done
++
+         killproc $RADOSGW
+         echo "Stopping radosgw instance(s)..."
++        while pidof $RADOSGW >/dev/null && [ $timeout -gt 0 ] ; do
++          sleep 1
++          timeout=$(($timeout - 1))
++        done
+         ;;
+     status)
+         daemon_is_running $RADOSGW
